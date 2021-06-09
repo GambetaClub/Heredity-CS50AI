@@ -96,6 +96,28 @@ def main():
                 print(f"    {value}: {p:.4f}")
 
 
+def get_inheritance_prob(parent_genes, is_inherited):
+    """
+    Accepts the amount of genes the parent has and the boolean 
+    descrbing whether to get the probability of inherit a gene or not. 
+    it returns the probability of getting the gene (or not) from his parent.
+    """
+    if is_inherited:
+        if parent_genes == 0:
+            return PROBS["mutation"]
+        elif parent_genes == 1:
+            return 0.5
+        else:
+            return 1 - PROBS["mutation"]
+    else:
+        if parent_genes == 0:
+            return 1 - PROBS["mutation"]
+        elif parent_genes == 1:
+            return 0.5
+        else:
+            return PROBS["mutation"]
+    
+
 def get_gene_quantity(person, one_gene, two_genes):
     if person in two_genes:
         return 2
@@ -175,36 +197,23 @@ def joint_probability(people, one_gene, two_genes, have_trait):
             calculation *= PROBS["gene"][gene_number] * PROBS["trait"][gene_number][has_trait]
         else:
             father_genes = get_gene_quantity(father, one_gene, two_genes)
-            mother_genes = people(father, one_gene, two_genes)
+            mother_genes = get_gene_quantity(mother, one_gene, two_genes)
             # If it does, then compute the probability depending on their parents
             calculation = 0
-            #  Probabilities of person for getting two genes
+            #  Probability of person for getting two genes
             if gene_number == 2:
-                if father_genes == 2 and mother_genes == 2:
-                    calculation += (1 - PROBS["mutation"] * 1 - PROBS["mutation"])
-                elif:
-                elif father_genes == 1 or mother_genes == 1 and (father_genes != mother_genes):
-                    calculation += (1 - PROBS["mutation"] * PROBS["mutation"])
-                else:   
-                    calculation += PROBS["mutation"] * PROBS["mutation"]
+                # Only if they inherit both from their father and mother
+                calculation += get_inheritance_prob(father_genes, True) * get_inheritance_prob(father_genes, True)
             #  Probabilities of person for getting only one gene
             elif gene_number == 1:
-                if father_genes == 1 and mother_genes == 1:
-                    calculation += (1 - PROBS["mutation"] * PROBS["mutation"]) * 2
-                elif father_genes == 1 or mother_genes == 1 and (father_genes != mother_genes):
-                    calculation += (1 - PROBS["mutation"] * 1 - PROBS["mutation"])
-                    calculation += PROBS["mutation"] * PROBS["mutation"]
-                else:
-                    calculation += (PROBS["mutation"] * 1 - PROBS["mutation"])
+                # If they inherit from their father and not their mother or viceversa
+                calculation += get_inheritance_prob(father_genes, True) * get_inheritance_prob(father_genes, False)
+                calculation += get_inheritance_prob(father_genes, False) * get_inheritance_prob(father_genes, True)
+            #  Probabilities of person for getting zero genes
             else:
-            #  Probabilities of person for getting no gene
-                if father_genes == 1 and mother_genes == 1:
-                    calculation += (PROBS["mutation"] * PROBS["mutation"])
-                elif father_genes == 1 or mother_genes == 1 and (father_genes != mother_genes):
-                    calculation += (PROBS["mutation"] * 1 - PROBS["mutation"])
-                else:
-                    calculation += (1 - PROBS["mutation"] * 1 - PROBS["mutation"])
-            calculation *= PROBS["trait"][gene_number][has_trait]
+                
+                # Only if they don't inherit from neither from their nor their mother 
+                 calculation += get_inheritance_prob(father_genes, False) * get_inheritance_prob(father_genes, False)
             
         record[person] = {
         "Name": person,
@@ -240,13 +249,14 @@ def normalize(probabilities):
     is normalized (i.e., sums to 1, with relative proportions the same).
     """
     for person in probabilities:
-        a = 0
-        for i in range(3):
-            a += probabilities[person]["gene"][i]
-        suma = 0
-        for i in range(3):
-            probabilities[person]["gene"][i] / a
-            suma += probabilities[person]["gene"][i]
+        trait_a = sum(probabilities[person]["trait"].values())
+        gene_a = sum(probabilities[person]["gene"].values())
+        
+        for gene in probabilities[person]["gene"]:
+            probabilities[person]["gene"][gene] /= gene_a
+            
+        for trait in probabilities[person]["trait"]:
+            probabilities[person]["trait"][trait] /= trait_a
 
     
             
